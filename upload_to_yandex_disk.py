@@ -1,14 +1,13 @@
 import os
-import yadisk
 import json
 import sys
 from datetime import date
 
+import yadisk
+
 def create_dir(y, path):
-    try:
+    if not y.exists(path):
         y.mkdir(path)
-    except yadisk.exceptions.DirectoryExistsError:
-        pass
 
 def upload_file(y, src_path, target_path):
     try:
@@ -18,8 +17,8 @@ def upload_file(y, src_path, target_path):
         y.remove(target_path)
         y.upload(src_path, target_path)
 
-def upload_to_disk(settings, source_path='', target_path='', ignored=[]):
-    y = yadisk.YaDisk(token = settings['token'])
+def upload_to_disk(_settings, source_path='', target_path='', _ignored=[]):
+    y = yadisk.YaDisk(token = _settings['token'])
     if y.check_token():
         print('Token is correct, uploading')
     else:
@@ -27,7 +26,7 @@ def upload_to_disk(settings, source_path='', target_path='', ignored=[]):
         sys.exit(3)
 
     if not target_path:
-        target_path = settings['default_folder']
+        target_path = _settings['default_folder']
 
     td = date.today().strftime("%Y_%m_%d")
 
@@ -58,17 +57,19 @@ def upload_to_disk(settings, source_path='', target_path='', ignored=[]):
     else:
         if os.path.isdir(source_path):
             for adress, dirs, files in os.walk(source_path):
-                cur_path = total_path + adress.replace(source_path, '')[1:].replace('\\', '/') + ('/' if adress.replace(source_path, '')[1:] else '')
-                inters = set(ignored).intersection(cur_path.split('/'))
+                cur_path = os.path.join(total_path,
+                            adress.replace(source_path, '')[1:].replace('\\', '/'),
+                            ('/' if adress.replace(source_path, '')[1:] else ''))
+                inters = set(_ignored).intersection(cur_path.split('/'))
                 if inters:
                     continue
-                for dir in dirs:
-                    if dir in ignored:
+                for subdir in dirs:
+                    if subdir in _ignored:
                         continue
-                    print(f'Creating dir {dir} in {cur_path}')
-                    create_dir(y, f'{cur_path}{dir}')
+                    print(f'Creating dir {subdir} in {cur_path}')
+                    create_dir(y, f'{cur_path}{subdir}')
                 for file in files:
-                    if file in ignored:
+                    if file in _ignored:
                         continue
                     print(f'Uploading {file} to {cur_path}')
                     upload_file(y, os.path.join(adress, file), f'{cur_path}{file}')
@@ -81,13 +82,15 @@ def upload_to_disk(settings, source_path='', target_path='', ignored=[]):
 if __name__ == '__main__':
     with open('settings.json', encoding='utf-8') as json_file:
         settings = json.load(json_file)
-    
+
     try:
         source_folder_path = sys.argv[1]
         target_folder_path = sys.argv[2]
     except IndexError:
-        print(f'Not Enough Arguments:')
-        print(f'\tusage: upload_to_yandex_disk.py <source folder or path to file to upload> <yandex disk destination folder>')
+        print('Not Enough Arguments:')
+        print('''\tusage: upload_to_yandex_disk.py
+              <source folder or path to file to upload>
+              <yandex disk destination folder>''')
         sys.exit(2)
 
     ignored = ['.git', '.gitignore', '.env', 'old', '__pycache__', 'config.txt']
