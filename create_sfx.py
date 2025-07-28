@@ -2,6 +2,7 @@ import os
 import sys
 import json
 
+
 def create_sfx(_settings, _source_folder_path, _ignored=[]):
     executable_name = ''
     if _settings["use_executable_name"]:
@@ -21,7 +22,6 @@ def create_sfx(_settings, _source_folder_path, _ignored=[]):
                 create_archive_command += f' {_source_folder_path}{item}'
     else:
         create_archive_command += f' {_source_folder_path}\\*'
-
 
     if executable_name:
         config = f''';!@Install@!UTF-8!\n
@@ -57,7 +57,8 @@ def create_sfx(_settings, _source_folder_path, _ignored=[]):
 
     os.remove(f'{archive_name}.7z')
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     try:
         source_folder_path = sys.argv[1]
     except IndexError:
